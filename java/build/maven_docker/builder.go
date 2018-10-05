@@ -21,14 +21,16 @@ type Builder struct {
 	HubUser      string
 	HubToken     string
 	M2SettingXML string
-
+    ExtCommand  string
 	projectName string
 }
 
 // NewBuilder is
 func NewBuilder(envs map[string]string) (*Builder, error) {
 	b := &Builder{}
-
+    if envs["GIT_CLONE_URL"] != "" {
+        b.ExtCommand = envs["EXT_COMMAND"]
+    }
 	if envs["GIT_CLONE_URL"] != "" {
 		b.GitCloneURL = envs["GIT_CLONE_URL"]
 		b.GitRef = envs["GIT_REF"]
@@ -81,6 +83,10 @@ func (b *Builder) run() error {
 	if err := b.build(); err != nil {
 		return err
 	}
+
+	if err := b.execCommand(); err != nil {
+        return err
+    }
 
 	// if err := b.handleArtifacts(); err != nil {
 	// 	return err
@@ -152,6 +158,23 @@ func (b *Builder) gitReset() error {
 	return nil
 }
 
+func (b *Builder) execCommand() error{
+    if(b.ExtCommand== ""){
+        return
+    }
+	fmt.Printf("exec:%s", s)
+    cmd := exec.Command("/bin/bash", "-c", s)
+    var out bytes.Buffer
+
+    cmd.Stdout = &out
+    err := cmd.Run()
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("%s", out.String())
+    return err
+}
+
 type CMD struct {
 	Command []string // cmd with args
 	WorkDir string
@@ -172,4 +195,17 @@ func (c CMD) Run() (string, error) {
 	}
 
 	return result, err
+}
+
+func exec_shell(s string) {
+    fmt.Printf("exec:%s", s)
+    cmd := exec.Command("/bin/bash", "-c", s)
+    var out bytes.Buffer
+
+    cmd.Stdout = &out
+    err := cmd.Run()
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("%s", out.String())
 }
